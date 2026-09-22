@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple JWT Auth</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      margin: 0;
+      padding: 40px 20px;
+    }
+
+    .box {
+      background: white;
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      margin-bottom: 5px;
+    }
+
+    input {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #bbb;
+      border-radius: 4px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 10px;
+      border: 0;
+      border-radius: 4px;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    #message {
+      min-height: 20px;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    #profile {
+      display: none;
+      margin-top: 25px;
+      padding-top: 15px;
+      border-top: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div id="formsContainer">
+      <h1>Register</h1>
+      <form id="registerForm">
+        <label for="registerName">Name</label>
+        <input id="registerName" name="name" type="text" required>
+
+        <label for="registerPassword">Password</label>
+        <input id="registerPassword" name="password" type="password" required>
+
+        <button type="submit">Register</button>
+      </form>
+
+      <h1>Login</h1>
+      <form id="loginForm">
+        <label for="loginName">Name</label>
+        <input id="loginName" name="name" type="text" required>
+
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" name="password" type="password" required>
+
+        <button type="submit">Login</button>
+      </form>
+    </div>
+
+    <p id="message"></p>
+
+    <div id="profile">
+      <h2>Welcome</h2>
+      <p id="userDetails"></p>
+      <button id="logoutButton" type="button">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const formsContainer = document.getElementById('formsContainer');
+    const message = document.getElementById('message');
+    const profile = document.getElementById('profile');
+    const userDetails = document.getElementById('userDetails');
+    const logoutButton = document.getElementById('logoutButton');
+
+    // Register Handler
+    registerForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      const name = document.getElementById('registerName').value;
+      const password = document.getElementById('registerPassword').value;
+
+      try {
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, password })
+        });
+
+        const data = await response.json();
+        message.textContent = data.message;
+      } catch (err) {
+        message.textContent = 'Server Error!';
+      }
+    });
+
+    // Login Handler
+    loginForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      const name = document.getElementById('loginName').value;
+      const password = document.getElementById('loginPassword').value;
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, password })
+        });
+
+        const data = await response.json();
+        message.textContent = data.message;
+
+        if (response.ok) {
+          localStorage.setItem('token', data.token);
+          showProfile();
+        }
+      } catch (err) {
+        message.textContent = 'Server Error!';
+      }
+    });
+
+   
+    logoutButton.addEventListener('click', function () {
+      localStorage.removeItem('token');
+      profile.style.display = 'none';
+      formsContainer.style.display = 'block';
+      message.textContent = 'You have logged out.';
+    });
+
+  
+    async function showProfile() {
+      const token = localStorage.getItem('token');
+
+      if (!token) return;
+
+      try {
+        const response = await fetch('/api/profile', {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          userDetails.textContent = 'User: ' + data.name;
+          profile.style.display = 'block';
+          formsContainer.style.display = 'none';
+        } else {
+          localStorage.removeItem('token');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    showProfile();
+  </script>
+</body>
+</html>
